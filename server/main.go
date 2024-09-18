@@ -2,31 +2,42 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"net"
 	"os"
 )
 
-func get_file() {
+func send_file(file_chunk []byte) {
+}
+
+func get_file(requested_file string) int64 {
 	//   read the file chunk by chunk. no need to read the whole file into memory, thats stupid. just read it using a seek thingy
+
+	// next 4 bytes will define the length of file | 32 bit integer will mean 4,294,967,295 bytes is the max size of the file to transfer, aka 4.294967295 GB
 
 	// add concurrent downloads later for multiple at once
 
-	file, err := os.Open("./server-data/data.mp4")
+	file, err := os.Open(requested_file)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return -1
 	}
 
 	defer file.Close()
 
+	stat, err := file.Stat()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	file_size := stat.Size()
+
 	reader := bufio.NewReader(file)
 
-	buffer := make([]byte, 1024)
+	file_chunk := make([]byte, 1024)
 
 	for {
-		n, err := reader.Read(buffer)
+		n, err := reader.Read(file_chunk)
 		if err != nil {
 			fmt.Println("err readign file")
 			fmt.Println("err")
@@ -35,9 +46,12 @@ func get_file() {
 			}
 		}
 
-		fmt.Printf("buffer contains %d bytes: %s", n, buffer)
+		fmt.Printf("buffer contains %d bytes: %s", n, file_chunk)
 
+		send_file(file_chunk)
 	}
+
+	return file_size
 }
 
 func read_conn(conn net.Conn) ([]byte, error) {
@@ -55,21 +69,14 @@ func interpret_input(buffer []byte) {
 	// format of incoming data: [header -> (command d or u, length of file in bytes if u), payload -> (file to download)]Accept
 	//
 
-	d := flag.String("d", "", "use -d for downloading from server")
-	u := flag.String("u", "", "use -u for uploading to server")
+	// first byte is opt u or d
+	//
 
-	flag.Parse()
-
-	download_path := *d
-	upload_path := *u
-
-	if download_path != "" {
-		get_file()
+	if string(buffer[0]) == "d" {
+		// download the file and send to user
 	}
 
-	if upload_path != "" {
-		// get ready to receive a file
-	}
+	get_file()
 }
 
 func handle_connection(conn net.Conn) {
