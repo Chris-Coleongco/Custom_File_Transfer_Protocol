@@ -7,10 +7,11 @@ import (
 	"os"
 )
 
-func send_file(file_chunk []byte) {
+func send_file(conn net.Conn, file_chunk []byte) {
+	conn.Write(file_chunk)
 }
 
-func get_file(requested_file string) int64 {
+func get_file(conn net.Conn, requested_file string) int64 {
 	//   read the file chunk by chunk. no need to read the whole file into memory, thats stupid. just read it using a seek thingy
 
 	// next 4 bytes will define the length of file | 32 bit integer will mean 4,294,967,295 bytes is the max size of the file to transfer, aka 4.294967295 GB
@@ -48,7 +49,7 @@ func get_file(requested_file string) int64 {
 
 		fmt.Printf("buffer contains %d bytes: %s", n, file_chunk)
 
-		send_file(file_chunk)
+		send_file(conn, file_chunk)
 	}
 
 	return file_size
@@ -65,7 +66,7 @@ func read_conn(conn net.Conn) ([]byte, error) {
 	return buffer, nil
 }
 
-func interpret_input(buffer []byte) {
+func interpret_input(conn net.Conn, buffer []byte) {
 	// format of incoming data: [header -> (command d or u, length of file in bytes if u), payload -> (file to download)]Accept
 	//
 
@@ -74,9 +75,8 @@ func interpret_input(buffer []byte) {
 
 	if string(buffer[0]) == "d" {
 		// download the file and send to user
+		get_file(conn, string(buffer[1:]))
 	}
-
-	get_file()
 }
 
 func handle_connection(conn net.Conn) {
@@ -90,7 +90,7 @@ func handle_connection(conn net.Conn) {
 		return
 	}
 
-	interpret_input(read)
+	interpret_input(conn, read)
 
 	// the initial read needs to invoke the protocol
 }
