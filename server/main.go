@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -48,24 +47,24 @@ func get_file(conn net.Conn, requested_file string) int64 {
 
 	send_init_packet(conn, file_size)
 
-	reader := bufio.NewReader(file)
+	//	reader := bufio.NewReader(file)
 
-	file_chunk := make([]byte, 512)
+	//	file_chunk := make([]byte, 512)
 
-	for {
-		n, err := reader.Read(file_chunk)
-		if err != nil {
-			fmt.Println("err readign file")
-			fmt.Println("err")
-			if err.Error() == "EOF" {
-				break
-			}
-		}
-
-		fmt.Printf("buffer contains %d bytes: %s", n, file_chunk)
-
-		send_file_chunk(conn, file_chunk)
-	}
+	//	for {
+	//		n, err := reader.Read(file_chunk)
+	//		if err != nil {
+	//			fmt.Println("err readign file")
+	//			fmt.Println("err")
+	//			if err.Error() == "EOF" {
+	//				break
+	//			}
+	//		}
+	//
+	//		fmt.Printf("buffer contains %d bytes: %s", n, file_chunk)
+	//
+	//		send_file_chunk(conn, file_chunk)
+	//	}
 
 	return file_size
 }
@@ -90,6 +89,7 @@ func interpret_input(conn net.Conn, buffer []byte) {
 
 	if string(buffer[0]) == "d" {
 		// download the file and send to user
+		fmt.Println(buffer[1:])
 		get_file(conn, string(buffer[1:]))
 	}
 }
@@ -104,6 +104,8 @@ func handle_connection(conn net.Conn) {
 		fmt.Println(err)
 		return
 	}
+
+	fmt.Println(read)
 
 	interpret_input(conn, read)
 
@@ -124,6 +126,7 @@ func main() {
 			continue
 		}
 
+		fmt.Println("starting connection")
 		go handle_connection(conn)
 
 	}

@@ -8,6 +8,18 @@ import (
 
 // send a mp4 file to the server
 
+func read_init_packet(conn net.Conn) {
+	init_packet := make([]byte, 512)
+	bytes_read, err := conn.Read(init_packet)
+	if err != nil {
+		fmt.Println()
+	}
+
+	fmt.Println(bytes_read)
+
+	fmt.Println(string(init_packet))
+}
+
 func construct_request(opt string, file_path string) []byte {
 	request := make([]byte, 512)
 
@@ -60,6 +72,8 @@ func main() {
 	conn.Write(request)
 
 	// use a buffered reader here to read the init packet and the subsequent file_chunks
-	//
-	// store the size from the init_packet in a variable that gets used as the range of a forloop for reading the file_chunks
+
+	read_init_packet(conn)
+
+	// store the size from the init_packet in a variable, divide it by 502 (the packet size minus 10 for the header) and as you read into the 512 buffer client side, you increment for loop by 1
 }
