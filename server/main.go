@@ -1,18 +1,20 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
 )
 
 func send_init_packet(conn net.Conn, file_size int64) {
+	fmt.Println("entered send_init_packet")
+	fmt.Println(file_size)
+
 	init_packet := make([]byte, 512)
 
 	init_packet[0] = 'd'
 
-	binary.BigEndian.PutUint64(init_packet[1:9], uint64(file_size))
+	fmt.Println(string(init_packet))
 
 	conn.Write(init_packet)
 }
@@ -47,25 +49,6 @@ func get_file(conn net.Conn, requested_file string) int64 {
 
 	send_init_packet(conn, file_size)
 
-	//	reader := bufio.NewReader(file)
-
-	//	file_chunk := make([]byte, 512)
-
-	//	for {
-	//		n, err := reader.Read(file_chunk)
-	//		if err != nil {
-	//			fmt.Println("err readign file")
-	//			fmt.Println("err")
-	//			if err.Error() == "EOF" {
-	//				break
-	//			}
-	//		}
-	//
-	//		fmt.Printf("buffer contains %d bytes: %s", n, file_chunk)
-	//
-	//		send_file_chunk(conn, file_chunk)
-	//	}
-
 	return file_size
 }
 
@@ -97,18 +80,20 @@ func interpret_input(conn net.Conn, buffer []byte) {
 func handle_connection(conn net.Conn) {
 	defer conn.Close()
 
+	init_packet := make([]byte, 1024)
+
 	// invoke protocol on first read v
-	read, err := read_conn(conn)
+	read, err := conn.Read(init_packet)
 	if err != nil {
 		fmt.Println("initial read failed")
 		fmt.Println(err)
 		return
 	}
 
+	fmt.Println("AKDGHOIAEDJG")
 	fmt.Println(read)
 
-	interpret_input(conn, read)
-
+	fmt.Println(init_packet)
 	// the initial read needs to invoke the protocol
 }
 
@@ -127,7 +112,11 @@ func main() {
 		}
 
 		fmt.Println("starting connection")
-		go handle_connection(conn)
 
+		init_packet := make([]byte, 1024)
+
+		conn.Read(init_packet)
+
+		fmt.Println(init_packet)
 	}
 }
