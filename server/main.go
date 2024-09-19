@@ -2,12 +2,23 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
 )
 
-func send_file(conn net.Conn, file_chunk []byte) {
+func send_init_packet(conn net.Conn, file_size int64) {
+	init_packet := make([]byte, 512)
+
+	init_packet[0] = 'd'
+
+	binary.BigEndian.PutUint64(init_packet[1:9], uint64(file_size))
+
+	conn.Write(init_packet)
+}
+
+func send_file_chunk(conn net.Conn, file_chunk []byte) {
 	conn.Write(file_chunk)
 }
 
@@ -33,9 +44,13 @@ func get_file(conn net.Conn, requested_file string) int64 {
 
 	file_size := stat.Size()
 
+	// first send a packet to the client with length of the file
+
+	send_init_packet(conn, file_size)
+
 	reader := bufio.NewReader(file)
 
-	file_chunk := make([]byte, 1024)
+	file_chunk := make([]byte, 512)
 
 	for {
 		n, err := reader.Read(file_chunk)
@@ -49,14 +64,14 @@ func get_file(conn net.Conn, requested_file string) int64 {
 
 		fmt.Printf("buffer contains %d bytes: %s", n, file_chunk)
 
-		send_file(conn, file_chunk)
+		send_file_chunk(conn, file_chunk)
 	}
 
 	return file_size
 }
 
 func read_conn(conn net.Conn) ([]byte, error) {
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 512)
 	_, err := conn.Read(buffer)
 	if err != nil {
 		fmt.Println(err)

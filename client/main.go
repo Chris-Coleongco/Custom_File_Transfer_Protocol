@@ -9,9 +9,24 @@ import (
 // send a mp4 file to the server
 
 func construct_request(opt string, file_path string) []byte {
-	request := make([]byte, 1024)
+	request := make([]byte, 512)
 
 	// construct the request here with headers and payload
+
+	switch opt {
+
+	case "d":
+
+		copy(request, []byte(opt))
+		copy(request, []byte(file_path))
+
+	case "u":
+
+		// need to get file size on client's file system
+		//  IMPLEMENT LATER
+		//
+		//  header => { opt, size, file_path }
+	}
 	return request
 }
 
@@ -43,4 +58,8 @@ func main() {
 	}
 
 	conn.Write(request)
+
+	// use a buffered reader here to read the init packet and the subsequent file_chunks
+	//
+	// store the size from the init_packet in a variable that gets used as the range of a forloop for reading the file_chunks
 }
