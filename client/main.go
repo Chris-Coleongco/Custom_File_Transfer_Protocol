@@ -24,6 +24,10 @@ func read_init_packet(conn net.Conn) {
 
 	fmt.Printf("yo: %v", size)
 
+	
+	add some decoding for additional file information in the init_packet
+
+	for example a permission denied or accepted byte
 
 
 
