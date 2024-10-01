@@ -1,2 +1,7 @@
+	// add authentication. only if user is in a sql database on the file-server will the server manage any requests
+
 	// add concurrent downloads later for multiple at once
+
+
+	
 

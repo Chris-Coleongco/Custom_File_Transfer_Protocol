@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
@@ -14,6 +16,12 @@ func send_init_packet(conn net.Conn, file_size int64) {
 
 	init_packet[0] = 'd'
 
+	fmt.Println(uint64(file_size))
+
+	binary.LittleEndian.PutUint64(init_packet[1:], uint64(file_size))
+
+	// how to read it back fmt.Printf("yo: %v", binary.LittleEndian.Uint64(init_packet[1:65]))
+	
 	fmt.Println(string(init_packet))
 
 	conn.Write(init_packet)
@@ -23,17 +31,19 @@ func send_file_chunk(conn net.Conn, file_chunk []byte) {
 	conn.Write(file_chunk)
 }
 
-func get_file(conn net.Conn, requested_file string) int64 {
+func get_file(conn net.Conn, requested_file string) {
 	//   read the file chunk by chunk. no need to read the whole file into memory, thats stupid. just read it using a seek thingy
 
 	// next 4 bytes will define the length of file | 32 bit integer will mean 4,294,967,295 bytes is the max size of the file to transfer, aka 4.294967295 GB
 
 	// add concurrent downloads later for multiple at once
+	fmt.Println("entered get_file")
+	fmt.Println([]byte(requested_file)) // need to get out null bytes
+	requested_file_trimmed := bytes.Trim([]byte(requested_file), "\x00")
 
-	file, err := os.Open(requested_file)
+	file, err := os.Open(string(requested_file_trimmed))
 	if err != nil {
 		fmt.Println(err)
-		return -1
 	}
 
 	defer file.Close()
@@ -44,12 +54,10 @@ func get_file(conn net.Conn, requested_file string) int64 {
 	}
 
 	file_size := stat.Size()
-
 	// first send a packet to the client with length of the file
 
 	send_init_packet(conn, file_size)
 
-	return file_size
 }
 
 func read_conn(conn net.Conn) ([]byte, error) {
@@ -69,10 +77,12 @@ func interpret_input(conn net.Conn, buffer []byte) {
 
 	// first byte is opt u or d
 	//
+	fmt.Println("entered interpret_input")
+	fmt.Println(buffer)
 
 	if string(buffer[0]) == "d" {
 		// download the file and send to user
-		fmt.Println(buffer[1:])
+		fmt.Println(buffer)
 		get_file(conn, string(buffer[1:]))
 	}
 }
@@ -80,7 +90,7 @@ func interpret_input(conn net.Conn, buffer []byte) {
 func handle_connection(conn net.Conn) {
 	defer conn.Close()
 
-	init_packet := make([]byte, 1024)
+	init_packet := make([]byte, 512)
 
 	// invoke protocol on first read v
 	read, err := conn.Read(init_packet)
@@ -94,6 +104,8 @@ func handle_connection(conn net.Conn) {
 	fmt.Println(read)
 
 	fmt.Println(init_packet)
+
+	interpret_input(conn, init_packet)
 	// the initial read needs to invoke the protocol
 }
 
@@ -113,10 +125,6 @@ func main() {
 
 		fmt.Println("starting connection")
 
-		init_packet := make([]byte, 1024)
-
-		conn.Read(init_packet)
-
-		fmt.Println(init_packet)
+		handle_connection(conn)
 	}
 }

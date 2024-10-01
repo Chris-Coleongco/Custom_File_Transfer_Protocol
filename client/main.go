@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"net"
@@ -17,7 +18,15 @@ func read_init_packet(conn net.Conn) {
 
 	fmt.Println(bytes_read)
 
-	fmt.Println(string(init_packet))
+	fmt.Println(init_packet)
+
+	size := binary.LittleEndian.Uint64(init_packet[1:65])
+
+	fmt.Printf("yo: %v", size)
+
+
+
+
 }
 
 func construct_request(opt string, file_path string) []byte {
@@ -29,8 +38,8 @@ func construct_request(opt string, file_path string) []byte {
 
 	case "d":
 
-		copy(request, []byte(opt))
-		copy(request, []byte(file_path))
+		request[0] = 'd'
+		copy(request[1:], []byte(file_path))
 
 	case "u":
 
@@ -53,7 +62,7 @@ func main() {
 	download_path := *d
 	upload_path := *u
 
-	request := make([]byte, 1024)
+	request := make([]byte, 512)
 
 	if download_path != "" {
 		request = construct_request(options[0], download_path)
