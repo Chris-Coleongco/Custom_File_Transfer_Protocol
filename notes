@@ -2,6 +2,6 @@
 
 	// add concurrent downloads later for multiple at once
 
-
+	// you may want to make the max filesize bigger by using a separate byte to state the multiples of the size of an int32 because the Peek funciton from bufio doesn't allow the int64 type 
 	
 

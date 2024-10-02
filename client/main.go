@@ -7,10 +7,12 @@ import (
 	"net"
 )
 
+const packet_size = 512
+
 // send a mp4 file to the server
 
-func read_init_packet(conn net.Conn) {
-	init_packet := make([]byte, 512)
+func read_init_packet_from_server(conn net.Conn) {
+	init_packet := make([]byte, packet_size)
 	bytes_read, err := conn.Read(init_packet)
 	if err != nil {
 		fmt.Println()
@@ -20,21 +22,28 @@ func read_init_packet(conn net.Conn) {
 
 	fmt.Println(init_packet)
 
-	size := binary.LittleEndian.Uint64(init_packet[1:65])
+	option_code := init_packet[0]
+	response_code := init_packet[1]
+	size := binary.LittleEndian.Uint64(init_packet[2:66])
 
 	fmt.Printf("yo: %v", size)
 
-	
-	add some decoding for additional file information in the init_packet
+	if option_code == 'd' && response_code == 1 {
+		// successful request, server will now send file chunks
+		// read logic here
+		// read logic here
+		// read logic here
+		// read logic here
 
-	for example a permission denied or accepted byte
+		retrieved_packet_buffer := make([]byte, packet_size)
 
+		conn.Read(retrieved_packet_buffer)
 
-
+	}
 }
 
 func construct_request(opt string, file_path string) []byte {
-	request := make([]byte, 512)
+	request := make([]byte, packet_size)
 
 	// construct the request here with headers and payload
 
@@ -66,7 +75,7 @@ func main() {
 	download_path := *d
 	upload_path := *u
 
-	request := make([]byte, 512)
+	request := make([]byte, packet_size)
 
 	if download_path != "" {
 		request = construct_request(options[0], download_path)
@@ -86,7 +95,7 @@ func main() {
 
 	// use a buffered reader here to read the init packet and the subsequent file_chunks
 
-	read_init_packet(conn)
+	read_init_packet_from_server(conn)
 
-	// store the size from the init_packet in a variable, divide it by 502 (the packet size minus 10 for the header) and as you read into the 512 buffer client side, you increment for loop by 1
+	// store the size from the init_packet in a variable, divide it by 502 (the packet size minus 10 for the header) and as you read into the packet_size buffer client side, you increment for loop by 1
 }

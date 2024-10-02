@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -8,23 +9,59 @@ import (
 	"os"
 )
 
+const packet_size = 512
+
 func send_init_packet(conn net.Conn, file_size int64) {
 	fmt.Println("entered send_init_packet")
 	fmt.Println(file_size)
 
-	init_packet := make([]byte, 512)
+	init_packet := make([]byte, packet_size)
 
 	init_packet[0] = 'd'
 
+	init_packet[1] = 0
+
 	fmt.Println(uint64(file_size))
 
-	binary.LittleEndian.PutUint64(init_packet[1:], uint64(file_size))
+	binary.LittleEndian.PutUint64(init_packet[2:], uint64(file_size))
 
-	// how to read it back fmt.Printf("yo: %v", binary.LittleEndian.Uint64(init_packet[1:65]))
-	
 	fmt.Println(string(init_packet))
 
 	conn.Write(init_packet)
+}
+
+func read_init_packet_response(conn net.Conn) int {
+
+	buffer, err := read_conn(conn)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return int(buffer[1])
+}
+
+func send_file(conn net.Conn, file *os.File, file_size int64) {
+
+	file_reader := bufio.NewReader(file)
+
+	var current_peak int = 511
+
+	for {
+		buffer, err := file_reader.Peek(current_peak)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		if int64(current_peak) < file_size {
+			send_file_chunk(conn, buffer)
+			current_peak += (packet_size - 1)
+		} else {
+			break
+		}
+	}
+
 }
 
 func send_file_chunk(conn net.Conn, file_chunk []byte) {
@@ -58,10 +95,18 @@ func get_file(conn net.Conn, requested_file string) {
 
 	send_init_packet(conn, file_size)
 
+	response := read_init_packet_response(conn)
+
+	if response == 1 {
+		// successful response therefore start sending file chunks
+
+		send_file(conn, file, file_size)
+	}
+
 }
 
 func read_conn(conn net.Conn) ([]byte, error) {
-	buffer := make([]byte, 512)
+	buffer := make([]byte, packet_size)
 	_, err := conn.Read(buffer)
 	if err != nil {
 		fmt.Println(err)
@@ -90,7 +135,7 @@ func interpret_input(conn net.Conn, buffer []byte) {
 func handle_connection(conn net.Conn) {
 	defer conn.Close()
 
-	init_packet := make([]byte, 512)
+	init_packet := make([]byte, packet_size)
 
 	// invoke protocol on first read v
 	read, err := conn.Read(init_packet)
@@ -125,6 +170,6 @@ func main() {
 
 		fmt.Println("starting connection")
 
-		handle_connection(conn)
+		go handle_connection(conn)
 	}
 }
