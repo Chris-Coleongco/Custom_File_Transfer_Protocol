@@ -1,0 +1,7 @@
+client:
+
+go run main.go -d path/to/file/on/server/to/download
+
+server:
+
+go run main.go

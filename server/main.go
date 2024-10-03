@@ -11,7 +11,7 @@ import (
 
 const packet_size = 512
 
-func send_init_packet(conn net.Conn, file_size int64) {
+func send_server_init_packet(conn net.Conn, file_size int64) {
 	fmt.Println("entered send_init_packet")
 	fmt.Println(file_size)
 
@@ -30,7 +30,7 @@ func send_init_packet(conn net.Conn, file_size int64) {
 	conn.Write(init_packet)
 }
 
-func read_init_packet_response(conn net.Conn) int {
+func read_client_init_packet_response(conn net.Conn) int {
 
 	buffer, err := read_conn(conn)
 
@@ -79,11 +79,10 @@ func get_file(conn net.Conn, requested_file string) {
 	requested_file_trimmed := bytes.Trim([]byte(requested_file), "\x00")
 
 	file, err := os.Open(string(requested_file_trimmed))
+	defer file.Close()
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	defer file.Close()
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -93,9 +92,9 @@ func get_file(conn net.Conn, requested_file string) {
 	file_size := stat.Size()
 	// first send a packet to the client with length of the file
 
-	send_init_packet(conn, file_size)
+	send_server_init_packet(conn, file_size)
 
-	response := read_init_packet_response(conn)
+	response := read_client_init_packet_response(conn)
 
 	if response == 1 {
 		// successful response therefore start sending file chunks
